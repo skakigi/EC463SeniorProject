@@ -4,7 +4,7 @@
 
 //.h file
 #include "MD_HLSConceptual.h"
-#define RANDOM_PARTICLE_GEN false
+#define RANDOM_PARTICLE_GEN true
 
 /*--------------------- functions start below ---------------------*/
 //error handler
@@ -25,12 +25,9 @@ void initCellList(Cell cellList[CELL_COUNT_ACROSS][CELL_COUNT_ACROSS][CELL_COUNT
         }
     }
 }
-void init(Particle *particleList, Cell cellList[CELL_COUNT_ACROSS][CELL_COUNT_ACROSS][CELL_COUNT_ACROSS]){
+void init(Cell cellList[CELL_COUNT_ACROSS][CELL_COUNT_ACROSS][CELL_COUNT_ACROSS]){
 
     //checking if particle and cell lists exist
-    if(particleList == NULL){
-        handleError("particleList is NULL : failed to init\n");
-    }
     if(cellList == NULL){
         handleError("cellList is NULL : failed to init\n");
     }
@@ -41,7 +38,23 @@ void init(Particle *particleList, Cell cellList[CELL_COUNT_ACROSS][CELL_COUNT_AC
 
     /* This section uses random particles */
     if(RANDOM_PARTICLE_GEN) {
+        /* iterate through the cell list */
+        for(int x=0;x<CELL_COUNT_ACROSS;x++){
+            for(int y=0;y<CELL_COUNT_ACROSS;y++){
+                for(int z=0;z<CELL_COUNT_ACROSS;z++){
+                    Cell currCell = cellList[x][y][z];
+                    for(int p=0;p<NUM_PARTICLES_PER_CELL;p++){
+                        Particle currParticle = setup_particle_random(&currCell);
+                        int nextIndex = currCell.nextIndex;
+                        currCell.Particles[nextIndex] = currParticle;
+                    }
+                }
+            }
+        }
+
+
         /* Generate all particles randomly */
+        /* -----out of order----- probably will scrap this method
         for (int i = 0; i < TOTAL_PARTICLE_COUNT; i++) {
             particleList[i] = setup_particle_random();
             float currPartX = particleList->x;
@@ -60,13 +73,14 @@ void init(Particle *particleList, Cell cellList[CELL_COUNT_ACROSS][CELL_COUNT_AC
                 cellList[cellX][cellY][cellZ].nextIndex++;
             }
         }
+        */
     }
     /* this section uses ordered particle start */
     else{
         for (int z = 0; z < CELL_COUNT_ACROSS; z++) {
             for (int y = 0; y < CELL_COUNT_ACROSS; y++) {
                 for (int x = 0; x < CELL_COUNT_ACROSS; x++) {
-                    setup_particle_ordered()
+                    setup_particle_ordered(&cellList[x][y][z]);
                 }
             }
         }
@@ -78,11 +92,10 @@ void init(Particle *particleList, Cell cellList[CELL_COUNT_ACROSS][CELL_COUNT_AC
 }
 
 int main(){
-    Particle particleList[TOTAL_PARTICLE_COUNT];
+    //instantiate cellList and setup particles
     Cell cellList[CELL_COUNT_ACROSS][CELL_COUNT_ACROSS][CELL_COUNT_ACROSS];
-    init(particleList,cellList);
+    init(cellList);
 
-    printf("The first particle has an x,y,z of %f,%f,%f",particleList[0].x,particleList[0].y,particleList[0].z);
 
 
 

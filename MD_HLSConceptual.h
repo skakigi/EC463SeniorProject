@@ -20,9 +20,9 @@
 #define NUM_CELLS 100
 #define CELL_SIZE_DIMENSION 10
 #define GRID_SIZE_DIMENSION 1000
-#define CELL_COUNT_ACROSS GRID_SIZE_DIMENSION/CELL_SIZE_DIMENSION
-#define TOTAL_PARTICLE_COUNT NUM_PARTICLES_PER_CELL * NUM_CELLS
-#define TOTAL_CELL_COUNT (int)(pow(GRID_SIZE_DIMENSION,3)/pow(CELL_SIZE_DIMENSION,3))
+#define CELL_COUNT_ACROSS (GRID_SIZE_DIMENSION/CELL_SIZE_DIMENSION)
+#define TOTAL_PARTICLE_COUNT (NUM_PARTICLES_PER_CELL * NUM_CELLS)
+#define TOTAL_CELL_COUNT ((int)(pow(GRID_SIZE_DIMENSION,3)/pow(CELL_SIZE_DIMENSION,3)))
 
 //properties of particles
 #define EXCLUSION_RADIUS 1
@@ -38,6 +38,13 @@ typedef struct{
 }Particle;
 
 typedef struct{
+    //coordinate location
+    float x,y;
+
+    int cell;
+}Particle2D;
+
+typedef struct{
     //assume each cell has NUM_PARTICLES_PER_CELL particles
     Particle Particles[NUM_PARTICLES_PER_CELL];
 
@@ -50,30 +57,72 @@ typedef struct{
     bool isFull;
 }Cell;
 
+typedef struct{
+    //assume each cell has NUM_PARTICLES_PER_CELL particles
+    Particle Particles[NUM_PARTICLES_PER_CELL];
+
+    //cell location (has to be integer x,y,z)
+    int x,y;
+
+    int nextIndex;
+
+    //quick check if the cell is full (mostly for setup)
+    bool isFull;
+}Cell2D;
 //Helper Functions
 
 int find_neighbors(const Cell *cellList);
+int find_neighbors_2D(const Cell2D *cellList);
 int find_distance(const Particle A,const Particle B);
+int find_distance_2D(const Particle2D A, const Particle2D B);
 void set_cell_coordinate(Cell *cell,int x,int y,int z){
     cell->x=x;
     cell->y=y;
     cell->z=z;
+}
+
+void set_cell_coordinate_2D(Cell2D *cell,int x, int y){
+    cell->x=x;
+    cell->y=y;
 }
 void set_particle_coordinate(Particle *particle,float x, float y, float z){
     particle->x=x;
     particle->y=y;
     particle->z=z;
 }
+
+void set_particle_coordinate2D(Particle2D *particle,float x, float y){
+    particle->x=x;
+    particle->y=y;
+}
+
 int convert_cellX_to_coordinate(Cell *cell){
     return cell->x*CELL_SIZE_DIMENSION;
 }
-void init(Particle *particleList,Cell cellList[CELL_COUNT_ACROSS][CELL_COUNT_ACROSS][CELL_COUNT_ACROSS]);
+int convert_cellX_to_coordinate_2D(Cell2D *cell){
+    return cell->x*CELL_SIZE_DIMENSION;
+}
+int convert_cellY_to_coordinate(Cell *cell){
+    return cell->y*CELL_SIZE_DIMENSION;
+}
+int convert_cellY_to_coordinate_2D(Cell2D *cell){
+    return cell->y*CELL_SIZE_DIMENSION;
+}
+int convert_cellZ_to_coordinate(Cell *cell){
+    return cell->z*CELL_SIZE_DIMENSION;
+}
+
+
+void init(Cell cellList[CELL_COUNT_ACROSS][CELL_COUNT_ACROSS][CELL_COUNT_ACROSS]);
+void init2D(Cell2D cellList[CELL_COUNT_ACROSS][CELL_COUNT_ACROSS]);
 void initCellList(Cell cellList[CELL_COUNT_ACROSS][CELL_COUNT_ACROSS][CELL_COUNT_ACROSS]);
+void initCellList2D(Cell2D cellList[CELL_COUNT_ACROSS][CELL_COUNT_ACROSS]);
+
 //Constructors
 
 /* ---------------------------------  Random Creation  --------------------------------- */
 /* This is a randomly generated particle method but will fail to use exclusion principle */
-Particle setup_particle_random(){
+Particle setup_particle_random(Cell *currCell){
 
 
     srand((unsigned int)time(NULL));
@@ -89,10 +138,23 @@ Particle setup_particle_random(){
     return particle;
 }
 
+Particle2D setup_particle_random_2D(){
+
+    srand((unsigned int)time(NULL));
+
+    Particle2D particle;
+    particle.x = ((float)rand()/(float)(RAND_MAX)) * GRID_SIZE_DIMENSION;
+    particle.y = ((float)rand()/(float)(RAND_MAX)) * GRID_SIZE_DIMENSION;
+
+    particle.cell = -1;
+
+    return particle;
+}
+
 /* ---------------------------------  Ordered Creation  --------------------------------- */
 /* This is an ordered creation that will start with exclusion principle in mind | will run the same if parameters are not changed */
 
-void setup_particle_ordered(int cellNum,Cell cellList[CELL_COUNT_ACROSS][CELL_COUNT_ACROSS][CELL_COUNT_ACROSS],Cell *currCell){
+void setup_particle_ordered(Cell *currCell){
     /* we need to initialize all particles in currCell */
     float currX = 0;
     float currY = 0;
